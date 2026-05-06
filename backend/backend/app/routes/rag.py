@@ -10,7 +10,7 @@ from slowapi.util import get_remote_address
 from typing import List
 
 from app.core.database import get_db
-from app.core.security import get_user_department, get_current_user
+from app.core.security import get_current_user
 from app.models.user import User, Thesis
 from app.schemas.schemas import (
     SearchQuery, SearchResponse, SearchResult, ThesisOut,
@@ -29,16 +29,11 @@ async def semantic_search(
     request: Request,
     payload: SearchQuery,
     db: AsyncSession = Depends(get_db),
-    user_dept: str = Depends(get_user_department),
+    current_user: User = Depends(get_current_user),
 ):
-    """
-    Semantic search auto-filtered by user's department (IT/EDUC).
-    Payload 'department=ALL' to override.
-    """
-    filters = {"department": user_dept}
-    if payload.department and payload.department.upper() == "ALL":
-        filters = None
-    elif payload.department:
+    """Semantic similarity search over the thesis vector store."""
+    filters = {}
+    if payload.department:
         filters["department"] = payload.department
 
     retrieved = await rag_pipeline.retrieve(
@@ -68,12 +63,12 @@ async def find_research_gaps(
     request: Request,
     payload: ResearchGapRequest,
     db: AsyncSession = Depends(get_db),
-    user_dept: str = Depends(get_user_department),
+    current_user: User = Depends(get_current_user),
 ):
-    """Analyze existing theses filtered by dept and identify research gaps."""
-    retrieved = await rag_pipeline.retrieve(payload.topic, top_k=8, filters={"department": user_dept})
+    """Analyze existing theses and identify research gaps using RAG + LLM."""
+    retrieved = await rag_pipeline.retrieve(payload.topic, top_k=8)
     if not retrieved:
-        raise HTTPException(status_code=404, detail="No relevant theses found for your department.")
+        raise HTTPException(status_code=404, detail="No relevant theses found for this topic.")
 
     gap_data = await rag_pipeline.generate_research_gaps(payload.topic, retrieved)
 
@@ -98,10 +93,10 @@ async def find_research_gaps(
 async def suggest_titles(
     request: Request,
     payload: TitleSuggestionRequest,
-    user_dept: str = Depends(get_user_department),
+    current_user: User = Depends(get_current_user),
 ):
-    """Generate titles based on dept-filtered existing works."""
-    retrieved = await rag_pipeline.retrieve(payload.topic, top_k=6, filters={"department": user_dept})
+    """Generate thesis title suggestions based on topic and existing works."""
+    retrieved = await rag_pipeline.retrieve(payload.topic, top_k=6)
     title_data = await rag_pipeline.suggest_titles(
         topic    = payload.topic,
         results  = retrieved,
@@ -122,19 +117,15 @@ async def list_theses(
     department: str = None,
     year: int = None,
     db: AsyncSession = Depends(get_db),
-    user_dept: str = Depends(get_user_department),
+    current_user: User = Depends(get_current_user),
 ):
-    """List approved theses, auto-filtered by user dept unless override."""
+    """List approved theses with optional filtering."""
     from app.models.user import ThesisStatus
     query = select(Thesis).where(Thesis.status == ThesisStatus.APPROVED)
-    
-    dept_filter = department or user_dept
-    if dept_filter:
-        query = query.where(Thesis.department == dept_filter)
+    if department:
+        query = query.where(Thesis.department == department)
     if year:
         query = query.where(Thesis.year == year)
-    
     query = query.offset((page - 1) * size).limit(size)
     result = await db.execute(query)
     return result.scalars().all()
-

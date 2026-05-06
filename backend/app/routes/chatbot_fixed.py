@@ -25,36 +25,33 @@ async def chat(
     request: Request,
     payload: ChatRequest,
     db: AsyncSession = Depends(get_db),
-current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """RAG-powered chat, filtered by dept."""
     # Load or create session
     session = None
     if payload.session_id:
-        # Note: session.user_id from legacy, assume matches
         result = await db.execute(
             select(ChatSession).where(ChatSession.id == payload.session_id)
         )
         session = result.scalar_one_or_none()
     
     if not session:
-        # Create with dummy user_id if needed; adjust model if legacy
-        session = ChatSession(user_id=1, history=[])
-        db.add(session)
-        await db.flush()
-
-    if not session:
         session = ChatSession(user_id=current_user.id, history=[])
         db.add(session)
         await db.flush()
 
     history = session.history or []
-    reply, sources = await rag_pipeline.chat(payload.message, history, filters={"department": user_dept})
+    reply, sources = await rag_pipeline.chat(
+        payload.message, 
+        history, 
+        filters={"department": current_user.department or "ALL"}
+    )
 
     # Append to history
-    history.append({"role": "user",      "content": payload.message})
+    history.append({"role": "user", "content": payload.message})
     history.append({"role": "assistant", "content": reply})
-    session.history    = history
+    session.history = history
     session.updated_at = datetime.now(timezone.utc)
     if not session.title or session.title == "New Chat":
         session.title = payload.message[:60]
@@ -69,9 +66,9 @@ current_user: User = Depends(get_current_user),
             source_theses.append(ThesisOut.model_validate(t))
 
     return ChatResponse(
-        reply      = reply,
-        session_id = session.id,
-        sources    = source_theses,
+        reply=reply,
+        session_id=session.id,
+        sources=source_theses,
     )
 
 
@@ -86,3 +83,4 @@ async def list_sessions(
     )
     sessions = result.scalars().all()
     return [{"id": s.id, "title": s.title, "updated_at": s.updated_at} for s in sessions]
+

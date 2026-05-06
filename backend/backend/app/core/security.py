@@ -58,19 +58,6 @@ def decode_token(token: str) -> dict[str, Any]:
 
 
 # ── Current User Dependencies ─────────────────────────────────────────────────
-async def get_user_department(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> str:
-    """
-    Get user's department from JWT payload (legacy: IT/EDUC).
-    """
-    payload = decode_token(credentials.credentials)
-    dept = payload.get("department")
-    if not dept or dept not in ("IT", "EDUC"):
-        raise HTTPException(status_code=400, detail="Invalid department in token")
-    return dept
-
-
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db),
@@ -103,4 +90,3 @@ def require_role(*roles: UserRole):
 require_admin      = require_role(UserRole.ADMIN)
 require_librarian  = require_role(UserRole.ADMIN, UserRole.LIBRARIAN)
 require_any        = require_role(UserRole.ADMIN, UserRole.LIBRARIAN, UserRole.USER)
-

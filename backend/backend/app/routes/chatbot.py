@@ -25,23 +25,19 @@ async def chat(
     request: Request,
     payload: ChatRequest,
     db: AsyncSession = Depends(get_db),
-current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    """RAG-powered chat, filtered by dept."""
+    """RAG-powered chat with full conversation history support."""
     # Load or create session
     session = None
     if payload.session_id:
-        # Note: session.user_id from legacy, assume matches
         result = await db.execute(
-            select(ChatSession).where(ChatSession.id == payload.session_id)
+            select(ChatSession).where(
+                ChatSession.id == payload.session_id,
+                ChatSession.user_id == current_user.id,
+            )
         )
         session = result.scalar_one_or_none()
-    
-    if not session:
-        # Create with dummy user_id if needed; adjust model if legacy
-        session = ChatSession(user_id=1, history=[])
-        db.add(session)
-        await db.flush()
 
     if not session:
         session = ChatSession(user_id=current_user.id, history=[])
@@ -49,7 +45,7 @@ current_user: User = Depends(get_current_user),
         await db.flush()
 
     history = session.history or []
-    reply, sources = await rag_pipeline.chat(payload.message, history, filters={"department": user_dept})
+    reply, sources = await rag_pipeline.chat(payload.message, history)
 
     # Append to history
     history.append({"role": "user",      "content": payload.message})

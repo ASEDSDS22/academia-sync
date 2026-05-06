@@ -11,12 +11,11 @@ import secrets
 class Settings(BaseSettings):
     # ── App ──────────────────────────────────────────────────────────────────
     APP_NAME: str = "AcademiaSync"
-    ALGORITHM: str = "HS256"
     DEBUG: bool = False
     SECRET_KEY: str = secrets.token_urlsafe(32)
 
     # ── Database ─────────────────────────────────────────────────────────────
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:HEAVENLYBLADES18@db.iuacqnhnoelnemcbmmtm.supabase.co:5432/postgres"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./academia_sync.db"
     # For PostgreSQL: postgresql+asyncpg://user:pass@localhost/academia_sync
 
     # ── JWT ──────────────────────────────────────────────────────────────────
@@ -60,9 +59,9 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 64
     MIN_SIMILARITY_SCORE: float = 0.3
 
-class Config:
-    env_file = ".env"
-    case_sensitive = True
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
 
 
 settings = Settings()
