@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = secrets.token_urlsafe(32)
 
     # ── Database ─────────────────────────────────────────────────────────────
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:HEAVENLYBLADES18@db.iuacqnhnoelnemcbmmtm.supabase.co:5432/postgres"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres.iuacqnhnoelnemcbmmtm:HEAVENLYBLADES18@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres"
     # For PostgreSQL: postgresql+asyncpg://user:pass@localhost/academia_sync
 
     # ── JWT ──────────────────────────────────────────────────────────────────
