@@ -13,7 +13,8 @@ import logging
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.routes import auth, rag, chatbot_fixed as chatbot, admin, librarian, data_ingestion
+from app.routes import auth, rag, chatbot_fixed as chatbot, admin, librarian, data_ingestion, accuracy
+
 
 # ── Logging ─────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -71,6 +72,8 @@ app.include_router(chatbot.router,         prefix="/chatbot",        tags=["AI C
 app.include_router(admin.router,           prefix="/admin",          tags=["Admin"])
 app.include_router(librarian.router,       prefix="/librarian",      tags=["Librarian"])
 app.include_router(data_ingestion.router,  prefix="/data-ingestion", tags=["Data Ingestion"])
+app.include_router(accuracy.router,        tags=["Accuracy"])
+
 
 @app.get("/health", tags=["System"])
 async def health_check():

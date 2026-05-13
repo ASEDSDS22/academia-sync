@@ -157,7 +157,7 @@ class ChatResponse(BaseModel):
 
 # ── Data Ingestion ────────────────────────────────────────────────────────────
 class IngestionStatusResponse(BaseModel):
-    upload_id:     int
+    id:            int
     filename:      str
     status:        str
     total_records: int

@@ -21,6 +21,7 @@ engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
     future=True,
+    connect_args={"statement_cache_size": 0},
 )
 
 # Async session factory

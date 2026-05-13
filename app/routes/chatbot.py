@@ -25,7 +25,6 @@ async def chat(
     request: Request,
     payload: ChatRequest,
     db: AsyncSession = Depends(get_db),
-current_user: User = Depends(get_current_user),
 ):
     """RAG-powered chat, filtered by dept."""
     # Load or create session
@@ -38,18 +37,13 @@ current_user: User = Depends(get_current_user),
         session = result.scalar_one_or_none()
     
     if not session:
-        # Create with dummy user_id if needed; adjust model if legacy
+        # Create with dummy user_id 1 since auth is bypassed for testing
         session = ChatSession(user_id=1, history=[])
         db.add(session)
         await db.flush()
 
-    if not session:
-        session = ChatSession(user_id=current_user.id, history=[])
-        db.add(session)
-        await db.flush()
-
     history = session.history or []
-    reply, sources = await rag_pipeline.chat(payload.message, history, filters={"department": user_dept})
+    reply, sources = await rag_pipeline.chat(payload.message, history, filters=None)
 
     # Append to history
     history.append({"role": "user",      "content": payload.message})

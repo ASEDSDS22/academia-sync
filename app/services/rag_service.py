@@ -7,7 +7,6 @@ import logging
 import uuid
 from typing import List, Optional, Tuple
 from dataclasses import dataclass
-
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -27,6 +26,7 @@ class RetrievedThesis:
 
 
 class EmbeddingService:
+
     """
     Pluggable embedding service.
     Supports: SentenceTransformers (local), OpenAI (API).
@@ -188,17 +188,15 @@ class VectorStoreService:
             self._collection.delete(ids=ids)
 
 
+
+
+
 class LLMService:
     """
     Pluggable LLM service.
-    Supports: OpenAI, Anthropic, Ollama.
-    """
-
-    class LLMService:
-        """
-    Pluggable LLM service.
     Supports: OpenAI, Anthropic, Ollama, Groq.
     """
+
 
     async def generate(self, system_prompt: str, user_prompt: str, max_tokens: int = 1000) -> str:  # ✅ indented
         provider = settings.LLM_PROVIDER
