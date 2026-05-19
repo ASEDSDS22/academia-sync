@@ -11,6 +11,7 @@ import {
 import { PageTransition } from '../components/PageTransition';
 import { SearchBar } from '../components/SearchBar';
 import { ThesisCard } from '../components/ThesisCard';
+import { SearchPageSkeleton } from '../components/ThesisCardSkeleton';
 import { searchTheses, departments } from '../data/mockTheses';
 const ITEMS_PER_PAGE = 6;
 export function SearchPage() {
@@ -331,10 +332,7 @@ export function SearchPage() {
             {/* Results */}
             <div className="flex-1 min-w-0">
               {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
-                  <div className="w-10 h-10 border-4 border-psu-maroon/20 border-t-psu-maroon rounded-full animate-spin mb-4" />
-                  <p className="text-gray-500 font-sans text-sm">Searching thesis database...</p>
-                </div>
+                <SearchPageSkeleton />
               ) : paginatedResults.length > 0 ? (
               <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

@@ -12,6 +12,7 @@ import { PageTransition } from '../components/PageTransition'
 import { SearchBar } from '../components/SearchBar'
 import { StatsCounter } from '../components/StatsCounter'
 import { ThesisCard } from '../components/ThesisCard'
+import { HomepageSkeleton } from '../components/ThesisCardSkeleton'
 import { mockTheses, departments } from '../data/mockTheses'
 const filterChips = ['All', ...departments]
 const steps = [
@@ -287,14 +288,18 @@ export function HomePage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredTheses.map((thesis, i) => (
-                <ThesisCard
-                  key={thesis.id}
-                  thesis={thesis}
-                  index={i}
-                  showRelevance
-                />
-              ))}
+              {isLoading ? (
+                <HomepageSkeleton />
+              ) : (
+                featuredTheses.map((thesis, i) => (
+                  <ThesisCard
+                    key={thesis.id}
+                    thesis={thesis}
+                    index={i}
+                    showRelevance
+                  />
+                ))
+              )}
             </div>
 
             <div className="mt-8 text-center md:hidden">

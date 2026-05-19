@@ -15,6 +15,7 @@ import {
 'lucide-react';
 import { PageTransition } from '../components/PageTransition';
 import { ThesisCard } from '../components/ThesisCard';
+import { ThesisDetailSkeleton } from '../components/ThesisCardSkeleton';
 import { getThesisById, getRelatedTheses } from '../data/mockTheses';
 export function ThesisDetailPage() {
   const { id } = useParams<{
@@ -87,10 +88,9 @@ export function ThesisDetailPage() {
   if (isLoading) {
     return (
       <PageTransition>
-        <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center py-20">
-            <div className="w-12 h-12 border-4 border-psu-maroon/20 border-t-psu-maroon rounded-full animate-spin mx-auto mb-5" />
-            <p className="text-gray-500 font-sans text-sm">Loading thesis details...</p>
+        <main className="min-h-screen bg-gray-50 py-8 md:py-12">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <ThesisDetailSkeleton />
           </div>
         </main>
       </PageTransition>
