@@ -7,10 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from typing import List
+from typing import List, Optional
 
 from app.core.database import get_db
-from app.core.security import get_user_department, get_current_user
+from app.core.security import get_user_department, get_current_user, get_user_department_optional
 from app.models.user import User, Thesis
 from app.schemas.schemas import (
     SearchQuery, SearchResponse, SearchResult, ThesisOut,
@@ -29,17 +29,21 @@ async def semantic_search(
     request: Request,
     payload: SearchQuery,
     db: AsyncSession = Depends(get_db),
-    user_dept: str = Depends(get_user_department),
+    user_dept: Optional[str] = Depends(get_user_department_optional),
 ):
     """
     Semantic search auto-filtered by user's department (IT/EDUC).
     Payload 'department=ALL' to override.
     """
-    filters = {"department": user_dept}
-    if payload.department and payload.department.upper() == "ALL":
-        filters = None
-    elif payload.department:
-        filters["department"] = payload.department
+    filters = {}
+    if user_dept:
+        filters["department"] = user_dept
+
+    if payload.department:
+        if payload.department.upper() == "ALL":
+            filters.pop("department", None)
+        else:
+            filters["department"] = payload.department
 
     retrieved = await rag_pipeline.retrieve(
         query   = payload.query,
@@ -122,14 +126,14 @@ async def list_theses(
     department: str = None,
     year: int = None,
     db: AsyncSession = Depends(get_db),
-    user_dept: str = Depends(get_user_department),
+    user_dept: Optional[str] = Depends(get_user_department_optional),
 ):
     """List approved theses, auto-filtered by user dept unless override."""
     from app.models.user import ThesisStatus
     query = select(Thesis).where(Thesis.status == ThesisStatus.APPROVED)
     
     dept_filter = department or user_dept
-    if dept_filter:
+    if dept_filter and dept_filter.upper() != "ALL":
         query = query.where(Thesis.department == dept_filter)
     if year:
         query = query.where(Thesis.year == year)
@@ -137,4 +141,20 @@ async def list_theses(
     query = query.offset((page - 1) * size).limit(size)
     result = await db.execute(query)
     return result.scalars().all()
+
+
+@router.get("/theses/{thesis_id}", response_model=ThesisOut)
+async def get_thesis(
+    thesis_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """Retrieve a single approved thesis by ID."""
+    from app.models.user import ThesisStatus
+    result = await db.execute(
+        select(Thesis).where(Thesis.id == thesis_id, Thesis.status == ThesisStatus.APPROVED)
+    )
+    thesis = result.scalar_one_or_none()
+    if not thesis:
+        raise HTTPException(status_code=404, detail="Thesis not found.")
+    return thesis
 
