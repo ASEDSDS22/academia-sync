@@ -349,42 +349,78 @@ export function SearchPage() {
                   </div>
 
                   {/* Pagination */}
-                  {totalPages > 1 &&
-                <div className="flex items-center justify-center gap-2 mt-10">
-                      <button
-                    onClick={() =>
-                    setCurrentPage((p) => Math.max(1, p - 1))
-                    }
-                    disabled={currentPage === 1}
-                    className="px-4 py-2 text-sm font-sans font-medium rounded-lg border border-gray-200 text-psu-charcoal hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                    
-                        Previous
-                      </button>
-                      {Array.from(
-                    {
-                      length: totalPages
-                    },
-                    (_, i) => i + 1
-                  ).map((page) =>
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`w-10 h-10 text-sm font-sans font-medium rounded-lg transition-colors ${page === currentPage ? 'bg-psu-maroon text-white' : 'border border-gray-200 text-psu-charcoal hover:bg-gray-50'}`}>
-                    
-                          {page}
+                  {totalPages > 1 && (() => {
+                    const getPageNumbers = () => {
+                      const pages = [];
+                      const maxVisible = 5;
+                      
+                      if (totalPages <= maxVisible) {
+                        return Array.from({ length: totalPages }, (_, i) => i + 1);
+                      }
+                      
+                      pages.push(1);
+                      
+                      if (currentPage > 3) {
+                        pages.push('...');
+                      }
+                      
+                      const start = Math.max(2, currentPage - 1);
+                      const end = Math.min(totalPages - 1, currentPage + 1);
+                      
+                      for (let i = start; i <= end; i++) {
+                        if (!pages.includes(i)) {
+                          pages.push(i);
+                        }
+                      }
+                      
+                      if (currentPage < totalPages - 2) {
+                        pages.push('...');
+                      }
+                      
+                      if (!pages.includes(totalPages)) {
+                        pages.push(totalPages);
+                      }
+                      
+                      return pages;
+                    };
+
+                    return (
+                      <div className="flex items-center justify-center gap-1 mt-10 flex-wrap">
+                        <button
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="px-3 py-2 text-sm font-sans font-medium rounded-lg border border-gray-200 text-psu-charcoal hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap">
+                          Previous
                         </button>
-                  )}
-                      <button
-                    onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                    className="px-4 py-2 text-sm font-sans font-medium rounded-lg border border-gray-200 text-psu-charcoal hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                    
-                        Next
-                      </button>
-                    </div>
-                }
+                        
+                        {getPageNumbers().map((page, idx) =>
+                          page === '...' ? (
+                            <span key={`ellipsis-${idx}`} className="px-2 py-2 text-gray-400">
+                              •••
+                            </span>
+                          ) : (
+                            <button
+                              key={page}
+                              onClick={() => setCurrentPage(page as number)}
+                              className={`w-9 h-9 text-sm font-sans font-medium rounded-lg transition-colors flex items-center justify-center ${
+                                page === currentPage
+                                  ? 'bg-psu-maroon text-white'
+                                  : 'border border-gray-200 text-psu-charcoal hover:bg-gray-50'
+                              }`}>
+                              {page}
+                            </button>
+                          )
+                        )}
+                        
+                        <button
+                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          className="px-3 py-2 text-sm font-sans font-medium rounded-lg border border-gray-200 text-psu-charcoal hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap">
+                          Next
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </>
               ) : (
               <motion.div
