@@ -1,18 +1,33 @@
 """
-AcademiaSync - Async Database Setup (SQLAlchemy + aiosqlite/asyncpg)
+AcademiaSync - Async Database Setup (SQLAlchemy + asyncpg)
 """
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+    AsyncSession,
+    async_sessionmaker
+)
 from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
 
 
+# Ensure asyncpg is used
+
+
+
+
+# Create async engine
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
     future=True,
+    connect_args={
+        "statement_cache_size": 0,
+        "prepared_statement_name_func": lambda: ""
+    }
 )
 
+# Async session factory
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
@@ -20,13 +35,13 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False,
 )
 
-
+# Base model
 class Base(DeclarativeBase):
     pass
 
 
+# 🔌 Dependency for FastAPI
 async def get_db():
-    """FastAPI dependency: yields an async DB session."""
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -34,5 +49,3 @@ async def get_db():
         except Exception:
             await session.rollback()
             raise
-        finally:
-            await session.close()

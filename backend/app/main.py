@@ -12,8 +12,9 @@ from slowapi.errors import RateLimitExceeded
 import logging
 
 from app.core.config import settings
-from app.core.database import engine, Base
-from app.routes import auth, rag, chatbot, admin, librarian, data_ingestion
+from app.core.database import engine, Base, AsyncSessionLocal
+from app.core.seeder import seed_theses_if_empty
+from app.routes import auth, rag, chatbot_fixed as chatbot, admin, librarian, data_ingestion
 
 # ── Logging ─────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -59,6 +60,8 @@ async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables initialized.")
+    # Run seeder
+    await seed_theses_if_empty(AsyncSessionLocal)
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -71,6 +74,10 @@ app.include_router(chatbot.router,         prefix="/chatbot",        tags=["AI C
 app.include_router(admin.router,           prefix="/admin",          tags=["Admin"])
 app.include_router(librarian.router,       prefix="/librarian",      tags=["Librarian"])
 app.include_router(data_ingestion.router,  prefix="/data-ingestion", tags=["Data Ingestion"])
+
+@app.get("/", tags=["System"])
+async def root():
+    return {"status": "ok", "service": "AcademiaSync"}
 
 @app.get("/health", tags=["System"])
 async def health_check():

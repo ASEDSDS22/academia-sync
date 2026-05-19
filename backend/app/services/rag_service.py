@@ -194,26 +194,41 @@ class LLMService:
     Supports: OpenAI, Anthropic, Ollama.
     """
 
-    async def generate(self, system_prompt: str, user_prompt: str, max_tokens: int = 1000) -> str:
+    class LLMService:
+        """
+    Pluggable LLM service.
+    Supports: OpenAI, Anthropic, Ollama, Groq.
+    """
+
+    async def generate(self, system_prompt: str, user_prompt: str, max_tokens: int = 1000) -> str:  # ✅ indented
         provider = settings.LLM_PROVIDER
 
-        if provider == "openai" and settings.OPENAI_API_KEY:
+        if provider == "groq" and settings.GROQ_API_KEY:
+            return await self._groq(system_prompt, user_prompt, max_tokens)
+        elif provider == "openai" and settings.OPENAI_API_KEY:
             return await self._openai(system_prompt, user_prompt, max_tokens)
         elif provider == "anthropic" and settings.ANTHROPIC_API_KEY:
             return await self._anthropic(system_prompt, user_prompt, max_tokens)
-        else:
-            return await self._ollama(system_prompt, user_prompt, max_tokens)
+        # ... rest of your generate logic
 
-    async def _openai(self, system: str, user: str, max_tokens: int) -> str:
-        from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-        resp = await client.chat.completions.create(
-            model=settings.LLM_MODEL,
-            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-            max_tokens=max_tokens,
-            temperature=0.7,
-        )
-        return resp.choices[0].message.content
+    async def _groq(self, system: str, user: str, max_tokens: int) -> str:
+        from groq import Groq          # Ensure you have the Groq SDK installed and configured
+
+        client = Groq(api_key=settings.GROQ_API_KEY)
+
+        def run():
+            response = client.chat.completions.create(  
+                model=settings.LLM_MODEL or "llama-3.1-8b-instant",
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                max_tokens=max_tokens,
+                temperature=0.7,
+            )
+            return response.choices[0].message.content
+
+        return await asyncio.to_thread(run)
 
     async def _anthropic(self, system: str, user: str, max_tokens: int) -> str:
         import anthropic
@@ -244,7 +259,49 @@ class LLMService:
             data = resp.json()
             return data["message"]["content"]
 
+    class LLMService:
+        """
+    Pluggable LLM service.
+    Supports: OpenAI, Anthropic, Ollama, Groq.
+    """
 
+    async def generate(self, system_prompt: str, user_prompt: str, max_tokens: int = 1000) -> str:
+        provider = settings.LLM_PROVIDER
+
+        if provider == "groq" and settings.GROQ_API_KEY:
+            return await self._groq(system_prompt, user_prompt, max_tokens)
+        elif provider == "openai" and settings.OPENAI_API_KEY:
+            return await self._openai(system_prompt, user_prompt, max_tokens)
+        elif provider == "anthropic" and settings.ANTHROPIC_API_KEY:
+            return await self._anthropic(system_prompt, user_prompt, max_tokens)
+
+    async def _openai(self, system: str, user: str, max_tokens: int) -> str:
+        # ... your existing openai method
+            from openai import AsyncOpenAI
+
+    async def _groq(self, system: str, user: str, max_tokens: int) -> str:  # 👈 ADD HERE
+        from groq import Groq
+        import asyncio
+
+        client = Groq(api_key=settings.GROQ_API_KEY)
+
+        def run():
+            response = client.chat.completions.create(
+                model=settings.LLM_MODEL or "llama-3.1-8b-instant",
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                max_tokens=max_tokens,
+                temperature=0.7,
+            )
+            return response.choices[0].message.content
+
+        return await asyncio.to_thread(run)
+
+
+class RAGPipeline:   # 👈 RAGPipeline starts AFTER LLMService ends
+    ...
 class RAGPipeline:
     """
     Full RAG pipeline: retrieve → augment → generate.
@@ -364,9 +421,10 @@ class RAGPipeline:
         message: str,
         history: List[dict],
         top_k: int = 3,
+        filters: Optional[dict] = None,
     ) -> Tuple[str, List[RetrievedThesis]]:
-        """RAG-powered conversational response with memory."""
-        retrieved = await self.retrieve(message, top_k=top_k)
+        """RAG-powered conversational response with memory, dept filter."""
+        retrieved = await self.retrieve(message, top_k=top_k, filters=filters)
         context = self._build_context(retrieved)
 
         history_text = "\n".join(

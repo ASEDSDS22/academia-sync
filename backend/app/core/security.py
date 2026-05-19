@@ -58,6 +58,65 @@ def decode_token(token: str) -> dict[str, Any]:
 
 
 # ── Current User Dependencies ─────────────────────────────────────────────────
+security_optional = HTTPBearer(auto_error=False)
+
+
+async def get_user_department_optional(
+    credentials: HTTPAuthorizationCredentials = Depends(security_optional),
+) -> Optional[str]:
+    """
+    Optional: Get user's department from JWT payload.
+    Returns None if no token is provided.
+    """
+    if not credentials:
+        return None
+    try:
+        payload = decode_token(credentials.credentials)
+        dept = payload.get("department")
+        if dept in ("IT", "EDUC"):
+            return dept
+    except Exception:
+        pass
+    return None
+
+
+async def get_current_user_optional(
+    credentials: HTTPAuthorizationCredentials = Depends(security_optional),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """
+    Optional: Get current logged-in user from JWT payload.
+    Returns None if no token is provided or invalid.
+    """
+    if not credentials:
+        return None
+    try:
+        payload = decode_token(credentials.credentials)
+        user_id = payload.get("sub") or payload.get("id")
+        if not user_id:
+            return None
+        result = await db.execute(select(User).where(User.id == int(user_id)))
+        user = result.scalar_one_or_none()
+        if user and user.is_active:
+            return user
+    except Exception:
+        pass
+    return None
+
+
+async def get_user_department(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> str:
+    """
+    Get user's department from JWT payload (legacy: IT/EDUC).
+    """
+    payload = decode_token(credentials.credentials)
+    dept = payload.get("department")
+    if not dept or dept not in ("IT", "EDUC"):
+        raise HTTPException(status_code=400, detail="Invalid department in token")
+    return dept
+
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db),
@@ -90,3 +149,4 @@ def require_role(*roles: UserRole):
 require_admin      = require_role(UserRole.ADMIN)
 require_librarian  = require_role(UserRole.ADMIN, UserRole.LIBRARIAN)
 require_any        = require_role(UserRole.ADMIN, UserRole.LIBRARIAN, UserRole.USER)
+

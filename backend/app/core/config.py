@@ -1,21 +1,24 @@
-"""
-AcademiaSync - Core Configuration
-Loads all settings from environment variables via pydantic-settings.
-"""
-
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
 import secrets
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore"
+    )
+
     # ── App ──────────────────────────────────────────────────────────────────
     APP_NAME: str = "AcademiaSync"
+    ALGORITHM: str = "HS256"
     DEBUG: bool = False
     SECRET_KEY: str = secrets.token_urlsafe(32)
 
     # ── Database ─────────────────────────────────────────────────────────────
-    DATABASE_URL: str = "sqlite+aiosqlite:///./academia_sync.db"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres.iuacqnhnoelnemcbmmtm:ACADEMIA@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres"
     # For PostgreSQL: postgresql+asyncpg://user:pass@localhost/academia_sync
 
     # ── JWT ──────────────────────────────────────────────────────────────────
@@ -59,9 +62,7 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 64
     MIN_SIMILARITY_SCORE: float = 0.3
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+
 
 
 settings = Settings()

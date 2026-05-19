@@ -7,10 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from typing import List
+from typing import List, Optional
 
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_user_department, get_current_user, get_user_department_optional
 from app.models.user import User, Thesis
 from app.schemas.schemas import (
     SearchQuery, SearchResponse, SearchResult, ThesisOut,
@@ -29,12 +29,21 @@ async def semantic_search(
     request: Request,
     payload: SearchQuery,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    user_dept: Optional[str] = Depends(get_user_department_optional),
 ):
-    """Semantic similarity search over the thesis vector store."""
+    """
+    Semantic search auto-filtered by user's department (IT/EDUC).
+    Payload 'department=ALL' to override.
+    """
     filters = {}
+    if user_dept:
+        filters["department"] = user_dept
+
     if payload.department:
-        filters["department"] = payload.department
+        if payload.department.upper() == "ALL":
+            filters.pop("department", None)
+        else:
+            filters["department"] = payload.department
 
     retrieved = await rag_pipeline.retrieve(
         query   = payload.query,
@@ -63,12 +72,12 @@ async def find_research_gaps(
     request: Request,
     payload: ResearchGapRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    user_dept: str = Depends(get_user_department),
 ):
-    """Analyze existing theses and identify research gaps using RAG + LLM."""
-    retrieved = await rag_pipeline.retrieve(payload.topic, top_k=8)
+    """Analyze existing theses filtered by dept and identify research gaps."""
+    retrieved = await rag_pipeline.retrieve(payload.topic, top_k=8, filters={"department": user_dept})
     if not retrieved:
-        raise HTTPException(status_code=404, detail="No relevant theses found for this topic.")
+        raise HTTPException(status_code=404, detail="No relevant theses found for your department.")
 
     gap_data = await rag_pipeline.generate_research_gaps(payload.topic, retrieved)
 
@@ -93,10 +102,10 @@ async def find_research_gaps(
 async def suggest_titles(
     request: Request,
     payload: TitleSuggestionRequest,
-    current_user: User = Depends(get_current_user),
+    user_dept: str = Depends(get_user_department),
 ):
-    """Generate thesis title suggestions based on topic and existing works."""
-    retrieved = await rag_pipeline.retrieve(payload.topic, top_k=6)
+    """Generate titles based on dept-filtered existing works."""
+    retrieved = await rag_pipeline.retrieve(payload.topic, top_k=6, filters={"department": user_dept})
     title_data = await rag_pipeline.suggest_titles(
         topic    = payload.topic,
         results  = retrieved,
@@ -117,15 +126,35 @@ async def list_theses(
     department: str = None,
     year: int = None,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    user_dept: Optional[str] = Depends(get_user_department_optional),
 ):
-    """List approved theses with optional filtering."""
+    """List approved theses, auto-filtered by user dept unless override."""
     from app.models.user import ThesisStatus
     query = select(Thesis).where(Thesis.status == ThesisStatus.APPROVED)
-    if department:
-        query = query.where(Thesis.department == department)
+    
+    dept_filter = department or user_dept
+    if dept_filter and dept_filter.upper() != "ALL":
+        query = query.where(Thesis.department == dept_filter)
     if year:
         query = query.where(Thesis.year == year)
+    
     query = query.offset((page - 1) * size).limit(size)
     result = await db.execute(query)
     return result.scalars().all()
+
+
+@router.get("/theses/{thesis_id}", response_model=ThesisOut)
+async def get_thesis(
+    thesis_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """Retrieve a single approved thesis by ID."""
+    from app.models.user import ThesisStatus
+    result = await db.execute(
+        select(Thesis).where(Thesis.id == thesis_id, Thesis.status == ThesisStatus.APPROVED)
+    )
+    thesis = result.scalar_one_or_none()
+    if not thesis:
+        raise HTTPException(status_code=404, detail="Thesis not found.")
+    return thesis
+
