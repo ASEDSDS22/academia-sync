@@ -1,18 +1,18 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
+  FileXIcon,
   FilterIcon,
-  XIcon,
-  SlidersHorizontalIcon,
   SearchIcon,
-  FileXIcon } from
-'lucide-react';
+  SlidersHorizontalIcon,
+  XIcon
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PageTransition } from '../components/PageTransition';
 import { SearchBar } from '../components/SearchBar';
 import { ThesisCard } from '../components/ThesisCard';
 import { SearchPageSkeleton } from '../components/ThesisCardSkeleton';
-import { searchTheses, departments } from '../data/mockTheses';
+import { departments, searchTheses } from '../data/mockTheses';
 const ITEMS_PER_PAGE = 6;
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
