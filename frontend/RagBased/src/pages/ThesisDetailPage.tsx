@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  ChevronRightIcon,
-  CalendarIcon,
-  UsersIcon,
-  FolderIcon,
-  UserIcon,
-  TagIcon,
-  DownloadIcon,
-  ExternalLinkIcon,
   ArrowLeftIcon,
-  FileXIcon } from
-'lucide-react';
+  CalendarIcon,
+  ChevronRightIcon,
+  ExternalLinkIcon,
+  FileXIcon,
+  FolderIcon,
+  MailIcon,
+  TagIcon,
+  UserIcon,
+  UsersIcon
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { PageTransition } from '../components/PageTransition';
 import { ThesisCard } from '../components/ThesisCard';
 import { ThesisDetailSkeleton } from '../components/ThesisCardSkeleton';
-import { getThesisById, getRelatedTheses } from '../data/mockTheses';
+import { getRelatedTheses, getThesisById } from '../data/mockTheses';
 export function ThesisDetailPage() {
   const { id } = useParams<{
     id: string;
@@ -251,7 +251,7 @@ export function ThesisDetailPage() {
                       {thesis.abstract.
                       split('\n').
                       filter(Boolean).
-                      map((paragraph, i) =>
+                      map((paragraph: string, i: number) =>
                       <p
                         key={i}
                         className="text-sm text-gray-600 font-sans leading-relaxed">
@@ -268,7 +268,7 @@ export function ThesisDetailPage() {
                       Keywords
                     </h2>
                     <div className="flex flex-wrap gap-2">
-                      {thesis.keywords.map((keyword) =>
+                      {thesis.keywords.map((keyword: string) =>
                       <Link
                         key={keyword}
                         to={`/search?q=${encodeURIComponent(keyword)}`}
@@ -359,8 +359,8 @@ export function ThesisDetailPage() {
                 {/* Actions */}
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-3">
                   <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-psu-maroon hover:bg-psu-maroon-dark text-white rounded-lg text-sm font-sans font-semibold transition-colors">
-                    <DownloadIcon className="w-4 h-4" />
-                    Download PDF
+                    <MailIcon className="w-4 h-4" />
+                    Send To Email
                   </button>
                   <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 text-psu-charcoal hover:bg-gray-50 rounded-lg text-sm font-sans font-medium transition-colors">
                     <ExternalLinkIcon className="w-4 h-4" />
