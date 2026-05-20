@@ -29,9 +29,7 @@ const baseNavLinks = [
   path: '/about'
 }];
 
-const utilityLinks = [
-'Data Privacy Notice',
-'Transparency Seal'];
+const utilityLinks = [ 'Contact Us', 'Help', 'Privacy Policy' ];
 
 const roleBadgeStyles: Record<string, string> = {
   student: 'bg-blue-500',

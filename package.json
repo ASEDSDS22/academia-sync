@@ -1,0 +1,14 @@
+{
+  "name": "academia-sync",
+  "version": "1.0.0",
+  "description": "Academia Sync - RAG-based academic paper search and chatbot",
+  "scripts": {
+    "dev": "npm run dev --prefix frontend/RagBased",
+    "build": "npm run build --prefix frontend/RagBased",
+    "lint": "npm run lint --prefix frontend/RagBased",
+    "preview": "npm run preview --prefix frontend/RagBased"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
